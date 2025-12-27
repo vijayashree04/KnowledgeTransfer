@@ -1,3 +1,4 @@
+
 """
 Quick script to verify that Supabase and local storage are clean for fresh setup.
 """
