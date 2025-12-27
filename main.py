@@ -46,12 +46,33 @@ else:
     st.sidebar.title(f"Welcome, {user_name}")
     if "team_name" in st.session_state:
         st.sidebar.info(f"🏢 Team: {st.session_state.team_name}")
-    if st.sidebar.button("Logout"):
+    if st.sidebar.button("Logout", type="secondary"):
         auth.logout()
     
-    st.title("📚 Centralized Knowledge Transfer Hub")
-    if "team_name" in st.session_state:
-        st.caption(f"Team: {st.session_state.team_name}")
+    # Welcome message banner at the top
+    user_name = st.session_state.get("name", st.session_state.get("email", "User"))
+    team_name = st.session_state.get("team_name", "your team")
+    st.markdown(f"""
+    <div style='background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid #3b82f6;'>
+        <h2 style='color: #1e293b; margin: 0 0 0.5rem 0; font-size: 1.75rem; font-weight: 600;'>
+            👋 Welcome back, {user_name}!
+        </h2>
+        <p style='color: #475569; margin: 0; font-size: 1.1rem;'>
+            Ready to explore your team's knowledge base? Upload documents, view summaries, or chat with the AI assistant.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Logout button in the main area (top right)
+    col_title, col_logout = st.columns([4, 1])
+    with col_title:
+        st.title("📚 Centralized Knowledge Transfer Hub")
+        if "team_name" in st.session_state:
+            st.caption(f"Team: {st.session_state.team_name}")
+    with col_logout:
+        st.markdown("<br>", unsafe_allow_html=True)  # Add some spacing
+        if st.button("🚪 Logout", type="secondary", use_container_width=True):
+            auth.logout()
     
     # Check if user is team lead
     import team_store
@@ -81,36 +102,16 @@ else:
             "Upload document",
             type=["txt", "md", "py", "js", "json", "pdf", "docx", "doc"],
             label_visibility="collapsed",
-            help="Supported formats: TXT, PDF, DOCX, MD, JSON, PY, JS. Maximum file size: 200MB"
+            
         )
         
         # Show file info and format info
-        if uploaded_file is None:
-            st.markdown("""
-            <div style='text-align: center; margin-top: 1rem;'>
-                <p style='color: #64748b; font-size: 0.875rem; margin: 0; line-height: 1.6;'>
-                    Supported formats: <strong style='color: #1e293b;'>TXT, PDF, DOCX, MD, JSON, PY, JS</strong><br>
-                    Maximum file size: <strong style='color: #1e293b;'>200MB</strong>
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
         
         # Show file info and process button if file is uploaded
         if uploaded_file is not None:
             st.markdown("<br>", unsafe_allow_html=True)
-            
-            # File name display
-            st.markdown(f"""
-            <div style='text-align: center; margin: 2rem 0 2rem 0;'>
-                <div style='display: inline-flex; align-items: center; gap: 0.75rem; background: #ffffff; padding: 1rem 1.5rem; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.06);'>
-                    <span style='font-size: 1.5rem;'>📄</span>
-                    <div style='text-align: left;'>
-                        <p style='margin: 0; color: #64748b; font-size: 0.875rem;'>Selected file</p>
-                        <p style='margin: 0.25rem 0 0 0; color: #1e293b; font-size: 1rem; font-weight: 500;'>{uploaded_file.name}</p>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+
+
             
             # Process and Upload button - centered
             col1, col2, col3 = st.columns([1, 2.5, 1])
@@ -180,8 +181,6 @@ else:
         st.header("Document Repository")
         docs = document_store.get_documents(team_id)
         
-        if is_lead:
-            st.success("👑 You are the Team Lead - You can delete documents")
         
         if not docs:
             st.info("No documents uploaded yet for your team.")
@@ -211,12 +210,6 @@ else:
     with tab3:
         st.header("Ask the Knowledge Base")
         
-        # Show vector search status
-        import vector_store
-        if vector_store.is_enabled():
-            st.info("🔍 Using Pinecone vector search for intelligent document retrieval")
-        else:
-            st.info("ℹ️ Using all documents (Pinecone not configured - add PINECONE_API_KEY to .env for vector search)")
         
         # Initialize chat history
         if "messages" not in st.session_state:
@@ -228,7 +221,7 @@ else:
                 st.markdown(message["content"])
 
         # Chat Input
-        if prompt := st.chat_input("How does the auth module work?"):
+        if prompt := st.chat_input("Ask any questions related to your project here"):
             # Add user message
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
@@ -236,7 +229,7 @@ else:
 
             # Generate response
             with st.chat_message("assistant"):
-                with st.spinner("Thinking..."):
+                with st.spinner("Generating response..."):
                     team_id = st.session_state.get("team_id")
                     team_name = st.session_state.get("team_name")
                     # Use Pinecone vector search for relevant context
