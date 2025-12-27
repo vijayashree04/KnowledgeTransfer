@@ -65,6 +65,8 @@ def summarize_document(text):
     - Cover all important information within these 6 points
     - Use bullet format: • or -
     - Be concise but comprehensive
+    - Return ONLY the bullet points, no introductory text, no phrases like "here is your summary" or "summary:"
+    - Start directly with the first bullet point
     
     Focus on covering:
     - Main purpose or topic
@@ -77,14 +79,41 @@ def summarize_document(text):
     Document Content:
     {text[:30000]}  # Limit context window just in case
     
-    Summary (exactly 6 bullet points maximum, each on a new line):
+    Return only the bullet points, starting immediately with the first bullet point:
     """
     try:
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt
         )
-        return response.text
+        summary_text = response.text
+        
+        # Clean up the summary to remove any introductory phrases
+        summary_text = summary_text.strip()
+        
+        # Remove common introductory phrases (case-insensitive)
+        intro_phrases = [
+            "here is your summary",
+            "here's your summary",
+            "here is the summary",
+            "here's the summary",
+            "summary:",
+            "summary",
+            "document summary:",
+            "document summary",
+            "the summary is:",
+            "the summary:",
+        ]
+        
+        for phrase in intro_phrases:
+            # Remove phrase if it appears at the start (case-insensitive)
+            if summary_text.lower().startswith(phrase.lower()):
+                summary_text = summary_text[len(phrase):].strip()
+                # Remove colon if present after the phrase
+                if summary_text.startswith(':'):
+                    summary_text = summary_text[1:].strip()
+        
+        return summary_text
     except Exception as e:
         error_msg = str(e)
         # Check for API key errors

@@ -284,6 +284,73 @@ def apply_global_theme():
         box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
     }
     
+    /* Keep expander background white always */
+    .stExpander,
+    [data-testid="stExpander"],
+    .stExpander summary,
+    [data-testid="stExpander"] summary {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+    }
+    
+    /* Make expander text and arrow black */
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary p,
+    [data-testid="stExpander"] summary div,
+    [data-testid="stExpander"] summary span,
+    [data-testid="stExpander"] summary * {
+        color: #000000 !important;
+    }
+    
+    /* Target the expander button/label area - black text */
+    [data-testid="stExpander"] > div:first-child,
+    [data-testid="stExpander"] > div:first-child p,
+    [data-testid="stExpander"] > div:first-child div,
+    [data-testid="stExpander"] > div:first-child span,
+    [data-testid="stExpander"] > div:first-child * {
+        color: #000000 !important;
+    }
+    
+    /* Override any inline color styles to ensure black text */
+    [data-testid="stExpander"] [style*="color: rgb(0, 0, 0)"],
+    [data-testid="stExpander"] [style*="color:#000"],
+    [data-testid="stExpander"] [style*="color: #000"],
+    [data-testid="stExpander"] [style*="color:black"],
+    [data-testid="stExpander"] [style*="color: black"],
+    [data-testid="stExpander"] [style*="color: rgb(255, 255, 255)"],
+    [data-testid="stExpander"] [style*="color:#fff"],
+    [data-testid="stExpander"] [style*="color: #fff"],
+    [data-testid="stExpander"] [style*="color:white"],
+    [data-testid="stExpander"] [style*="color: white"] {
+        color: #000000 !important;
+    }
+    
+    /* Ensure expander text stays black in all states */
+    .stExpander summary[aria-expanded="true"],
+    .stExpander summary[aria-expanded="false"],
+    [data-testid="stExpander"] summary[aria-expanded="true"],
+    [data-testid="stExpander"] summary[aria-expanded="false"] {
+        color: #000000 !important;
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+    }
+    
+    /* General rule for all text in expander headers - black */
+    .stExpander summary,
+    .stExpander summary *,
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary * {
+        color: #000000 !important;
+    }
+    
+    /* Make the expander arrow black */
+    [data-testid="stExpander"] summary::marker,
+    [data-testid="stExpander"] summary::-webkit-details-marker,
+    .stExpander summary::marker,
+    .stExpander summary::-webkit-details-marker {
+        color: #000000 !important;
+    }
+    
     /* Info/Success/Error messages */
     .stAlert {
         border-radius: 12px !important;
