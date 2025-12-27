@@ -11,13 +11,35 @@ import document_store
 import gemini_utils
 import team_store
 import user_store
+import landing_page
+import theme
 
 # Page Config
-st.set_page_config(page_title="Centralized KT App", layout="wide")
+st.set_page_config(
+    page_title="Knowledge Transfer Hub",
+    page_icon="📚",
+    layout="wide",
+    initial_sidebar_state="auto"
+)
 
-# Auth Check
-if not auth.check_auth():
-    auth.login_page()
+# Apply global theme
+theme.apply_global_theme()
+
+# Navigation logic - use session state
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "landing"
+
+# Check authentication
+is_authenticated = auth.check_auth()
+
+# Route to appropriate page
+if not is_authenticated:
+    if st.session_state.current_page == "signup":
+        auth.signup_page()
+    elif st.session_state.current_page == "login":
+        auth.login_page()
+    else:
+        landing_page.show_landing_page()
 else:
     # Sidebar
     user_name = st.session_state.get("name", st.session_state.get("email", "User"))
@@ -50,71 +72,8 @@ else:
         # Header section
         st.markdown("""
         <div style='margin-bottom: 2.5rem; text-align: center;'>
-            <p style='color: #0f172a; margin: 0; font-size: 1.5rem; font-weight: 500; line-height: 1.5;'>Add documents to your team's knowledge base</p>
+            <p style='color: #1e293b; margin: 0; font-size: 1.5rem; font-weight: 500; line-height: 1.5;'>Add documents to your team's knowledge base</p>
         </div>
-        """, unsafe_allow_html=True)
-        
-        # Add CSS for file uploader styling
-        st.markdown("""
-        <style>
-        /* Style the file uploader container */
-        [data-testid="stFileUploader"] {
-            border: 2px dashed #cbd5e1 !important;
-            border-radius: 12px !important;
-            padding: 2rem !important;
-            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
-            text-align: center !important;
-            cursor: pointer !important;
-        }
-        
-        [data-testid="stFileUploader"]:hover {
-            border-color: #6366f1 !important;
-        }
-        
-        /* Style the browse button inside file uploader - target all possible button selectors */
-        [data-testid="stFileUploader"] button,
-        [data-testid="stFileUploader"] .stButton > button,
-        [data-testid="stFileUploader"] [role="button"],
-        [data-testid="stFileUploader"] button[type="button"] {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
-            background-color: #6366f1 !important;
-            color: #ffffff !important;
-            border: none !important;
-            border-radius: 8px !important;
-            padding: 0.5rem 1.5rem !important;
-            font-weight: 500 !important;
-            transition: all 0.2s !important;
-            cursor: pointer !important;
-        }
-        
-        [data-testid="stFileUploader"] button:hover,
-        [data-testid="stFileUploader"] .stButton > button:hover,
-        [data-testid="stFileUploader"] [role="button"]:hover,
-        [data-testid="stFileUploader"] button[type="button"]:hover {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
-            background-color: #4f46e5 !important;
-            transform: translateY(-1px) !important;
-            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3) !important;
-        }
-        
-        [data-testid="stFileUploader"] button *,
-        [data-testid="stFileUploader"] button span,
-        [data-testid="stFileUploader"] button p {
-            color: #ffffff !important;
-        }
-        
-        /* Ensure file input is accessible */
-        [data-testid="stFileUploader"] input[type="file"] {
-            cursor: pointer !important;
-            opacity: 0 !important;
-            position: absolute !important;
-            width: 100% !important;
-            height: 100% !important;
-            top: 0 !important;
-            left: 0 !important;
-            z-index: 10 !important;
-        }
-        </style>
         """, unsafe_allow_html=True)
         
         # File uploader with hidden label
@@ -129,9 +88,9 @@ else:
         if uploaded_file is None:
             st.markdown("""
             <div style='text-align: center; margin-top: 1rem;'>
-                <p style='color: #94a3b8; font-size: 0.875rem; margin: 0; line-height: 1.6;'>
-                    Supported formats: <strong style='color: #64748b;'>TXT, PDF, DOCX, MD, JSON, PY, JS</strong><br>
-                    Maximum file size: <strong style='color: #64748b;'>200MB</strong>
+                <p style='color: #64748b; font-size: 0.875rem; margin: 0; line-height: 1.6;'>
+                    Supported formats: <strong style='color: #1e293b;'>TXT, PDF, DOCX, MD, JSON, PY, JS</strong><br>
+                    Maximum file size: <strong style='color: #1e293b;'>200MB</strong>
                 </p>
             </div>
             """, unsafe_allow_html=True)
@@ -143,11 +102,11 @@ else:
             # File name display
             st.markdown(f"""
             <div style='text-align: center; margin: 2rem 0 2rem 0;'>
-                <div style='display: inline-flex; align-items: center; gap: 0.75rem; background: #f8fafc; padding: 1rem 1.5rem; border-radius: 10px; border: 1px solid #e2e8f0;'>
+                <div style='display: inline-flex; align-items: center; gap: 0.75rem; background: #ffffff; padding: 1rem 1.5rem; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.06);'>
                     <span style='font-size: 1.5rem;'>📄</span>
                     <div style='text-align: left;'>
                         <p style='margin: 0; color: #64748b; font-size: 0.875rem;'>Selected file</p>
-                        <p style='margin: 0.25rem 0 0 0; color: #0f172a; font-size: 1rem; font-weight: 500;'>{uploaded_file.name}</p>
+                        <p style='margin: 0.25rem 0 0 0; color: #1e293b; font-size: 1rem; font-weight: 500;'>{uploaded_file.name}</p>
                     </div>
                 </div>
             </div>
@@ -183,7 +142,7 @@ else:
                         # Display summary - centered
                         st.markdown("""
                         <div style='text-align: center; margin: 2rem 0;'>
-                            <h3 style='color: #0f172a; margin-bottom: 1.5rem;'>📋 Document Summary</h3>
+                            <h3 style='color: #1e293b; margin-bottom: 1.5rem;'>📋 Document Summary</h3>
                         </div>
                         """, unsafe_allow_html=True)
                         

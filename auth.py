@@ -10,9 +10,18 @@ def check_auth():
     return st.session_state.logged_in
 
 def signup_page():
-    """Displays the signup page."""
-    st.title("📝 Create Account")
-    st.info("Create a new account. You'll join a team during login.")
+    """Displays the signup page with modern styling."""
+    # Back to home link
+    if st.button("← Back to Home", use_container_width=False, key="back_home_signup"):
+        st.session_state.current_page = "landing"
+        st.rerun()
+    
+    st.markdown("""
+    <div style='text-align: center; margin-bottom: 3rem;'>
+        <h1 style='font-size: 2.5rem; color: #1e293b; margin: 0 0 0.5rem 0; font-weight: 700;'>📝 Create Account</h1>
+        <p style='color: #64748b; font-size: 1.1rem; margin: 0;'>Join your team and start sharing knowledge</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     with st.form("signup_form"):
         name = st.text_input("Full Name", placeholder="Enter your full name")
@@ -42,13 +51,25 @@ def signup_page():
                     st.success(f"Account created successfully! Welcome, {name}.")
                     st.info("You can now login with your email and password, and enter your team access code.")
                     st.balloons()
+                    # Redirect to login
+                    st.session_state.current_page = "login"
+                    st.rerun()
                 except ValueError as e:
                     st.error(str(e))
 
 def login_page():
-    """Displays the login page."""
-    st.title("🔐 Login")
-    st.info("Enter your credentials and team access code to continue.")
+    """Displays the login page with modern styling."""
+    # Back to home link
+    if st.button("← Back to Home", use_container_width=False, key="back_home_login"):
+        st.session_state.current_page = "landing"
+        st.rerun()
+    
+    st.markdown("""
+    <div style='text-align: center; margin-bottom: 3rem;'>
+        <h1 style='font-size: 2.5rem; color: #1e293b; margin: 0 0 0.5rem 0; font-weight: 700;'>🔐 Welcome Back</h1>
+        <p style='color: #64748b; font-size: 1.1rem; margin: 0;'>Enter your credentials to access your team's knowledge base</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Tabs for Login and Sign Up
     tab1, tab2 = st.tabs(["Login", "Sign Up"])
@@ -97,6 +118,9 @@ def login_page():
                                 st.session_state.team_name = team["name"]
                                 st.session_state.is_team_lead = is_team_lead
                                 st.session_state.access_code = access_code
+                                # Clear current_page to show main app
+                                if "current_page" in st.session_state:
+                                    del st.session_state.current_page
                                 st.rerun()
                         else:
                             st.error("Invalid email or password.")
@@ -107,6 +131,7 @@ def login_page():
 def logout():
     """Logs the user out."""
     st.session_state.logged_in = False
+    st.session_state.current_page = "landing"  # Return to landing page
     if "user_id" in st.session_state:
         del st.session_state.user_id
     if "name" in st.session_state:
