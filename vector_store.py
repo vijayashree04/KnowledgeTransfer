@@ -164,7 +164,8 @@ def query_similar_documents(
         query_embedding = gemini_utils.embed_text(query_text)
         
         if not query_embedding or len(query_embedding) == 0:
-            print("Warning: Failed to generate embedding for query")
+            print("Warning: Failed to generate embedding for query. This may be due to an expired or invalid API key.")
+            print("   Please check your GEMINI_API_KEY in the .env file.")
             return []
         
         # Build filter for team
