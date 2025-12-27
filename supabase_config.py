@@ -1,23 +1,32 @@
 import os
+from typing import TYPE_CHECKING, Optional, Any
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # Try to import Supabase
+if TYPE_CHECKING:
+    from supabase import Client
+
 try:
     from supabase import create_client, Client
     SUPABASE_AVAILABLE = True
 except ImportError:
     SUPABASE_AVAILABLE = False
+    Client = None  # type: ignore
     print("Warning: supabase package not installed. Falling back to file-based storage.")
 
 # Get environment variables
 SUPABASE_URL = os.getenv("SUPABASE_URL")
+# Ensure URL has trailing slash to avoid storage endpoint warnings
+if SUPABASE_URL and not SUPABASE_URL.endswith("/"):
+    SUPABASE_URL = SUPABASE_URL + "/"
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 # Initialize Supabase client
-supabase: Client | None = None
+# Use string annotation to avoid NameError when Client is not available
+supabase: Optional["Client"] = None  # type: ignore
 
 if SUPABASE_AVAILABLE and SUPABASE_URL:
     # Prefer SUPABASE_KEY (anon/public key) over service role key for client-side operations

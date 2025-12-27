@@ -215,6 +215,30 @@ def get_all_context(team_id: Optional[str] = None) -> str:
             context += f"\nSummary: {doc['summary']}\n"
     return context
 
+def get_context_for_query(query: str, team_id: Optional[str] = None, team_name: Optional[str] = None) -> str:
+    """Gets relevant context for a query using Pinecone vector search, with fallback to all documents."""
+    # Try to use Pinecone vector search if available
+    if vector_store.is_enabled() and team_id:
+        try:
+            # Query Pinecone for similar documents
+            matches = vector_store.query_similar_documents(
+                query_text=query,
+                team_id=str(team_id),
+                team_name=team_name,
+                top_k=10  # Get top 10 most relevant chunks (allows multiple chunks per document)
+            )
+            
+            if matches:
+                # Build context from Pinecone matches
+                context = vector_store.build_context_from_matches(matches)
+                if context:
+                    return context
+        except Exception as e:
+            print(f"Warning: Pinecone query failed, falling back to all documents: {e}")
+    
+    # Fallback to all documents if Pinecone is not available or query failed
+    return get_all_context(team_id)
+
 def delete_document(filename: str, team_id: Optional[str] = None) -> bool:
     """Deletes a document from Supabase."""
     _check_supabase()
@@ -244,6 +268,18 @@ def delete_document(filename: str, team_id: Optional[str] = None) -> bool:
             
             # Delete from database
             delete_result = supabase.table("documents").delete().eq("id", doc_id).execute()
+            
+            # Delete vectors from Pinecone if enabled
+            try:
+                if vector_store.is_enabled():
+                    vector_store.delete_document_vectors(
+                        doc_id=str(doc_id),
+                        team_id=str(team_uuid),
+                        team_name=None
+                    )
+            except Exception as e:
+                print(f"Warning: Could not delete vectors from Pinecone: {e}")
+            
             return True
         
         return False

@@ -12,7 +12,8 @@ try:
     PINECONE_AVAILABLE = True
 except ImportError:
     PINECONE_AVAILABLE = False
-    print("Warning: pinecone package not installed. Vector search will be disabled.")
+    # Pinecone is optional - only show warning if actually needed
+    # Vector search will be disabled silently if not available
 
 # Initialize Pinecone client
 pc = None
@@ -149,7 +150,7 @@ def query_similar_documents(
     query_text: str,
     team_id: str,
     team_name: Optional[str] = None,
-    top_k: int = 5
+    top_k: int = 10  # Increased to allow multiple chunks per document
 ) -> List[Dict]:
     """Queries Pinecone for similar documents based on the query text."""
     if not is_enabled():
@@ -194,23 +195,68 @@ def query_similar_documents(
         return []
 
 def build_context_from_matches(matches: List[Dict]) -> str:
-    """Builds a context string from Pinecone query matches."""
+    """Builds a context string from Pinecone query matches.
+    Groups chunks by document and allows multiple chunks per document."""
     if not matches:
         return ""
     
-    context_parts = []
-    seen_docs = set()
+    # Sort matches by score (highest first) to prioritize most relevant content
+    sorted_matches = sorted(matches, key=lambda x: x.get("score", 0), reverse=True)
     
-    for match in matches:
+    # Group chunks by document
+    documents = {}  # doc_id -> {filename, summary, chunks: [(chunk_index, snippet, score)]}
+    seen_chunks = set()  # Track individual chunks to avoid duplicates
+    
+    for match in sorted_matches:
         metadata = match.get("metadata", {})
         doc_id = metadata.get("doc_id")
         filename = metadata.get("filename", "Unknown")
         snippet = metadata.get("snippet", "")
+        chunk_index = metadata.get("chunk_index", 0)
+        summary = metadata.get("summary", "")
+        score = match.get("score", 0)
         
-        # Avoid duplicate documents
-        if doc_id and doc_id not in seen_docs:
-            seen_docs.add(doc_id)
-            context_parts.append(f"From {filename}:\n{snippet}")
+        # Create unique identifier for this chunk
+        chunk_id = f"{doc_id}:{chunk_index}"
+        
+        # Skip duplicate chunks
+        if chunk_id in seen_chunks or not snippet:
+            continue
+        
+        seen_chunks.add(chunk_id)
+        
+        # Initialize document entry if not exists
+        if doc_id not in documents:
+            documents[doc_id] = {
+                "filename": filename,
+                "summary": summary,
+                "chunks": []
+            }
+        
+        # Add chunk to document (sorted by score within document)
+        documents[doc_id]["chunks"].append((chunk_index, snippet, score))
+    
+    # Build context string, grouping chunks by document
+    context_parts = []
+    for doc_id, doc_data in documents.items():
+        filename = doc_data["filename"]
+        summary = doc_data["summary"]
+        chunks = doc_data["chunks"]
+        
+        # Sort chunks by chunk_index to maintain document order
+        chunks.sort(key=lambda x: x[0])
+        
+        # Build document header
+        context_entry = f"--- Document: {filename} ---\n"
+        if summary:
+            context_entry += f"Summary: {summary}\n"
+        
+        # Add all relevant chunks from this document
+        context_entry += "Relevant content:\n"
+        for chunk_index, snippet, score in chunks:
+            context_entry += f"{snippet}\n\n"
+        
+        context_parts.append(context_entry.strip())
     
     return "\n\n".join(context_parts)
 

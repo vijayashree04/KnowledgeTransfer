@@ -1,10 +1,16 @@
 import streamlit as st
+import os
+from dotenv import load_dotenv
+
+# Load environment variables first
+load_dotenv()
+
+# Now import modules that depend on environment variables
 import auth
 import document_store
 import gemini_utils
 import team_store
 import user_store
-import os
 
 # Page Config
 st.set_page_config(page_title="Centralized KT App", layout="wide")
@@ -246,6 +252,13 @@ else:
     with tab3:
         st.header("Ask the Knowledge Base")
         
+        # Show vector search status
+        import vector_store
+        if vector_store.is_enabled():
+            st.info("🔍 Using Pinecone vector search for intelligent document retrieval")
+        else:
+            st.info("ℹ️ Using all documents (Pinecone not configured - add PINECONE_API_KEY to .env for vector search)")
+        
         # Initialize chat history
         if "messages" not in st.session_state:
             st.session_state.messages = []
@@ -266,7 +279,9 @@ else:
             with st.chat_message("assistant"):
                 with st.spinner("Thinking..."):
                     team_id = st.session_state.get("team_id")
-                    context = document_store.get_all_context(team_id)
+                    team_name = st.session_state.get("team_name")
+                    # Use Pinecone vector search for relevant context
+                    context = document_store.get_context_for_query(prompt, team_id, team_name)
                     response = gemini_utils.chat_with_documents(prompt, context)
                     st.markdown(response)
             
