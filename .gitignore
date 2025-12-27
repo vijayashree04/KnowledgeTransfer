@@ -134,3 +134,4 @@ drizzle/
 # Lock files (optional - some teams prefer to commit these)
 # uv.lock
 # package-lock.json
+.env
