@@ -24,7 +24,7 @@ def show_landing_page():
                 st.session_state.current_page = "signup"
                 st.rerun()
         with col_btn2:
-            if st.button("Login", use_container_width=True, key="login_btn_landing"):
+            if st.button("Login", type="secondary", use_container_width=True, key="login_btn_landing"):
                 st.session_state.current_page = "login"
                 st.rerun()
     

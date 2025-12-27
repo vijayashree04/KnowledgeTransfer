@@ -79,7 +79,7 @@ def login_page():
             email = st.text_input("Email", placeholder="Enter your email address")
             password = st.text_input("Password", type="password")
             access_code = st.text_input("Team Access Code", type="password", help="Enter your team's access code")
-            submit = st.form_submit_button("Login")
+            submit = st.form_submit_button("Login", type="primary")
 
             if submit:
                 if not email or not password:

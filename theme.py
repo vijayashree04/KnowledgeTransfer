@@ -122,6 +122,50 @@ def apply_global_theme():
         box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2) !important;
     }
     
+    /* Form submit buttons - Ensure text visibility */
+    .stForm button,
+    .stForm .stButton > button,
+    button[type="submit"] {
+        background: #3b82f6 !important;
+        background-color: #3b82f6 !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 0.625rem 1.5rem !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+    }
+    
+    .stForm button:hover,
+    .stForm .stButton > button:hover,
+    button[type="submit"]:hover {
+        background: #2563eb !important;
+        background-color: #2563eb !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+    }
+    
+    /* Ensure all button text and child elements are visible */
+    .stButton > button,
+    .stForm button,
+    button[type="submit"],
+    button[kind="primary"],
+    button[kind="secondary"],
+    .stButton > button span,
+    .stButton > button p,
+    .stForm button span,
+    .stForm button p {
+        color: #ffffff !important;
+    }
+    
+    button[kind="secondary"],
+    button[kind="secondary"] span,
+    button[kind="secondary"] p {
+        color: #3b82f6 !important;
+    }
+    
     /* ============================================
        FORMS & INPUTS
        ============================================ */
@@ -161,7 +205,7 @@ def apply_global_theme():
     
     /* File uploader - Light theme */
     [data-testid="stFileUploader"] {
-        border: 2px dashed #cbd5e1 !important;
+        border: none !important;
         border-radius: 16px !important;
         padding: 2rem !important;
         background: #ffffff !important;
@@ -170,7 +214,6 @@ def apply_global_theme():
     }
     
     [data-testid="stFileUploader"]:hover {
-        border-color: #3b82f6 !important;
         background: #f8fafc !important;
         background-color: #f8fafc !important;
     }
@@ -201,6 +244,23 @@ def apply_global_theme():
         box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
     }
     
+    [data-testid="stFileUploader"] button *,
+    [data-testid="stFileUploader"] button span,
+    [data-testid="stFileUploader"] button p {
+        color: #ffffff !important;
+    }
+    
+    /* File uploader text - Light color */
+    [data-testid="stFileUploader"] p,
+    [data-testid="stFileUploader"] span,
+    [data-testid="stFileUploader"] div,
+    [data-testid="stFileUploader"] label,
+    [data-testid="stFileUploader"] * {
+        color: #94a3b8 !important;
+    }
+    
+    /* Keep button text white */
+    [data-testid="stFileUploader"] button,
     [data-testid="stFileUploader"] button *,
     [data-testid="stFileUploader"] button span,
     [data-testid="stFileUploader"] button p {
