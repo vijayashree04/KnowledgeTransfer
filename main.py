@@ -208,37 +208,65 @@ else:
 
     # Tab 3: Chatbot
     with tab3:
-        st.header("Ask the Knowledge Base")
-        
-        
-        # Initialize chat history
+        # Initialize chat history in session state
         if "messages" not in st.session_state:
             st.session_state.messages = []
+        
+        # Initialize pending prompt flag
+        if "pending_prompt" not in st.session_state:
+            st.session_state.pending_prompt = None
 
-        # Display chat messages
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-
-        # Chat Input
-        if prompt := st.chat_input("Ask any questions related to your project here"):
-            # Add user message
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
-
-            # Generate response
-            with st.chat_message("assistant"):
-                with st.spinner("Generating response..."):
-                    team_id = st.session_state.get("team_id")
-                    team_name = st.session_state.get("team_name")
-                    # Use Pinecone vector search for relevant context
-                    context = document_store.get_context_for_query(prompt, team_id, team_name)
-                    response = gemini_utils.chat_with_documents(prompt, context)
-                    st.markdown(response)
+        # Create a container for messages (allows scrolling)
+        messages_container = st.container()
+        
+        with messages_container:
+            # Show welcome message if no messages exist
+            if len(st.session_state.messages) == 0 and not st.session_state.pending_prompt:
+                st.markdown("""
+                <div style='display: flex; justify-content: center; align-items: center; min-height: 400px; text-align: center;'>
+                    <div>
+                        <h2 style='color: #64748b; font-weight: 400; margin-bottom: 1rem;'>👋 Welcome to your Knowledge Base</h2>
+                        <p style='color: #94a3b8; font-size: 1.1rem;'>Ask any questions about your project documents, and I'll help you find the answers.</p>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
             
-            # Add assistant message
-            st.session_state.messages.append({"role": "assistant", "content": response})
+            # Display all chat messages from history (renders above input)
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
+            
+            # Check if there's a pending prompt to process
+            if st.session_state.pending_prompt:
+                # Show thinking indicator below the last message
+                with st.chat_message("assistant"):
+                    with st.spinner("Generating response..."):
+                        team_id = st.session_state.get("team_id")
+                        team_name = st.session_state.get("team_name")
+                        # Use Pinecone vector search for relevant context
+                        context = document_store.get_context_for_query(st.session_state.pending_prompt, team_id, team_name)
+                        response = gemini_utils.chat_with_documents(st.session_state.pending_prompt, context)
+                        st.markdown(response)
+                
+                # Add assistant message to history
+                st.session_state.messages.append({"role": "assistant", "content": response})
+                
+                # Clear pending prompt
+                st.session_state.pending_prompt = None
+                
+                # Rerun to refresh the UI
+                st.rerun()
+
+        # Chat Input (automatically pinned to bottom when in main body)
+        if prompt := st.chat_input("Ask any questions related to your project here"):
+            # Add user message to history immediately
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            
+            # Set pending prompt to trigger response generation on next rerun
+            st.session_state.pending_prompt = prompt
+            
+            # Rerun immediately so user message appears above input
+            st.rerun()
     
     # Tab 4: Team Settings (only for team leads)
     if is_lead:
