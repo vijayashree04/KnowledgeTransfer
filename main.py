@@ -41,13 +41,6 @@ if not is_authenticated:
     else:
         landing_page.show_landing_page()
 else:
-    # Sidebar
-    user_name = st.session_state.get("name", st.session_state.get("email", "User"))
-    st.sidebar.title(f"Welcome, {user_name}")
-    if "team_name" in st.session_state:
-        st.sidebar.info(f"🏢 Team: {st.session_state.team_name}")
-    if st.sidebar.button("Logout", type="secondary"):
-        auth.logout()
     
     # Welcome message banner at the top
     user_name = st.session_state.get("name", st.session_state.get("email", "User"))
@@ -134,8 +127,8 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Generate Summary
-                        summary = gemini_utils.summarize_document(metadata["content"])
+                        # Generate Short Summary (for upload tab display)
+                        summary = gemini_utils.summarize_document_short(metadata["content"], uploaded_file.name)
                         document_store.update_document_summary(uploaded_file.name, summary, team_id)
                         
                         st.markdown("<br><br>", unsafe_allow_html=True)
@@ -191,11 +184,162 @@ else:
                 
                 with col1:
                     with st.expander(f"📄 {doc['filename']} (Uploaded by {doc['uploaded_by']} on {doc['upload_date']})"):
-                        st.markdown("### Summary")
-                        st.write(doc.get("summary") or "No summary available.")
-                        st.markdown("---")
-                        st.markdown("### Content Preview")
-                        st.text(doc.get("content", "")[:500] + "...")
+                        st.markdown("### Detailed Summary")
+                        
+                        # Check if detailed summary exists in Supabase
+                        detailed_summary = doc.get("detailed_summary")
+                        
+                        # If not in database, generate and save it
+                        if not detailed_summary:
+                            with st.spinner("Generating detailed summary..."):
+                                # Get full document content
+                                full_content = doc.get("content", "")
+                                
+                                # If content is not available, try to get from database
+                                if not full_content or len(full_content) < 100:
+                                    try:
+                                        docs = document_store.get_documents(team_id)
+                                        for d in docs:
+                                            if d.get('filename') == doc['filename']:
+                                                full_content = d.get("content", "")
+                                                if full_content:
+                                                    break
+                                    except:
+                                        pass
+                                
+                                if full_content and len(full_content) > 50:
+                                    # Generate detailed summary
+                                    detailed_summary = gemini_utils.summarize_document_detailed(full_content, doc['filename'])
+                                    
+                                    # Save to Supabase
+                                    try:
+                                        document_store.update_document_detailed_summary(doc['filename'], detailed_summary, team_id)
+                                        # Update the doc dict so it's available for next time
+                                        doc['detailed_summary'] = detailed_summary
+                                    except Exception as e:
+                                        st.warning(f"Summary generated but could not be saved to database: {str(e)}")
+                                else:
+                                    detailed_summary = "⚠️ Content not available for detailed summary generation. The document content may not have been extracted during upload."
+                        
+                        # Display detailed summary with markdown formatting
+                        if detailed_summary:
+                            # Process markdown to convert standalone **text** to smaller headings
+                            import re
+                            # Convert standalone **text** lines to smaller markdown headings (#### = h4)
+                            lines = detailed_summary.split('\n')
+                            processed_lines = []
+                            for line in lines:
+                                # Check if line is a standalone bold heading (starts and ends with **)
+                                if re.match(r'^\s*\*\*.*\*\*\s*$', line):
+                                    # Convert to smaller heading (#### = h4, which is smaller than h2/h3)
+                                    heading_text = re.sub(r'\*\*', '', line).strip()
+                                    processed_lines.append(f"#### {heading_text}")
+                                else:
+                                    processed_lines.append(line)
+                            processed_summary = '\n'.join(processed_lines)
+                            
+                            # Add custom CSS to make all headings in summary smaller
+                            st.markdown("""
+                                <style>
+                                /* Target headings in the summary section */
+                                .stMarkdown h1 { font-size: 1.3em !important; }
+                                .stMarkdown h2 { font-size: 1.2em !important; }
+                                .stMarkdown h3 { font-size: 1.15em !important; }
+                                .stMarkdown h4 { font-size: 1.1em !important; font-weight: 600 !important; }
+                                .stMarkdown h5 { font-size: 1.05em !important; }
+                                .stMarkdown h6 { font-size: 1em !important; }
+                                </style>
+                            """, unsafe_allow_html=True)
+                            
+                            # Display the processed summary
+                            st.markdown(processed_summary)
+                            
+                            # Download options
+                            st.markdown("---")
+                            st.markdown("### Download Summary")
+                            
+                            col_dl1, col_dl2, col_dl3 = st.columns(3)
+                            
+                            with col_dl1:
+                                # Download as TXT
+                                summary_txt = detailed_summary.encode('utf-8')
+                                st.download_button(
+                                    label="📄 Download as TXT",
+                                    data=summary_txt,
+                                    file_name=f"{doc['filename']}_summary.txt",
+                                    mime="text/plain",
+                                    key=f"download_txt_{doc['filename']}"
+                                )
+                            
+                            
+                            with col_dl3:
+                                # Download as DOCX
+                                try:
+                                    from docx import Document
+                                    from io import BytesIO
+                                    import re
+                                    
+                                    # Helper function to add text with bold formatting
+                                    def add_formatted_text(paragraph, text):
+                                        """Adds text to paragraph, handling **bold** and `code` markdown."""
+                                        # Split by ** and ` to find formatted sections
+                                        parts = re.split(r'(\*\*.*?\*\*|`.*?`)', text)
+                                        for part in parts:
+                                            if part.startswith('**') and part.endswith('**'):
+                                                # Bold text - remove **
+                                                bold_text = part.replace('**', '')
+                                                paragraph.add_run(bold_text).bold = True
+                                            elif part.startswith('`') and part.endswith('`'):
+                                                # Code/inline code
+                                                code_text = part.replace('`', '')
+                                                run = paragraph.add_run(code_text)
+                                                run.font.name = 'Courier New'
+                                            else:
+                                                # Regular text
+                                                if part:
+                                                    paragraph.add_run(part)
+                                    
+                                    docx_doc = Document()
+                                    docx_doc.add_heading(f'Summary: {doc["filename"]}', 0)
+                                    
+                                    # Parse markdown and add to document with proper formatting
+                                    lines = detailed_summary.split('\n')
+                                    for line in lines:
+                                        line = line.strip()
+                                        if not line:
+                                            continue
+                                        
+                                        # Check if it's a heading (starts and ends with **)
+                                        if re.match(r'^\*\*.*\*\*$', line):
+                                            # Remove all ** and use as heading
+                                            heading_text = re.sub(r'\*\*', '', line).strip()
+                                            docx_doc.add_heading(heading_text, level=2)
+                                        elif line.startswith('•') or line.startswith('-') or (line.startswith('*') and not line.startswith('**')):
+                                            # Bullet point - remove bullet and process inline formatting
+                                            bullet_text = re.sub(r'^[•\-\*]\s*', '', line)
+                                            p = docx_doc.add_paragraph(style='List Bullet')
+                                            add_formatted_text(p, bullet_text)
+                                        else:
+                                            # Regular paragraph - process inline formatting
+                                            p = docx_doc.add_paragraph()
+                                            add_formatted_text(p, line)
+                                    
+                                    # Save to BytesIO
+                                    docx_buffer = BytesIO()
+                                    docx_doc.save(docx_buffer)
+                                    docx_buffer.seek(0)
+                                    
+                                    st.download_button(
+                                        label="📝 Download as DOCX",
+                                        data=docx_buffer.getvalue(),
+                                        file_name=f"{doc['filename']}_summary.docx",
+                                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                        key=f"download_docx_{doc['filename']}"
+                                    )
+                                except Exception as e:
+                                    st.info(f"DOCX unavailable")
+                        else:
+                            st.info("Detailed summary is being generated...")
                 
                 with col2:
                     if is_lead:

@@ -204,6 +204,144 @@ def update_document_summary(filename: str, summary: str, team_id: Optional[str] 
     except Exception as e:
         raise ValueError(f"Failed to update document summary: {str(e)}")
 
+def save_summary_file_to_storage(filename: str, summary_text: str, team_id: Optional[str] = None, file_format: str = "docx") -> Optional[str]:
+    """Saves the summarized document as a file to Supabase Storage and returns the storage path."""
+    _check_supabase()
+    
+    if not team_id:
+        raise ValueError("team_id is required to save summary file.")
+    
+    try:
+        team_uuid = _validate_team_id(team_id)
+        storage_bucket = "documents"
+        
+        # Create summary filename
+        base_name = filename.rsplit('.', 1)[0] if '.' in filename else filename
+        summary_filename = f"{base_name}_summary.{file_format}"
+        storage_path = f"{team_uuid}/summaries/{summary_filename}"
+        
+        # Prepare file content based on format
+        if file_format == "docx":
+            # Create Word document
+            from docx import Document
+            from io import BytesIO
+            import re
+            
+            docx_doc = Document()
+            docx_doc.add_heading(f'Summary: {filename}', 0)
+            
+            # Helper function to add text with bold formatting
+            def add_formatted_text(paragraph, text):
+                """Adds text to paragraph, handling **bold** and `code` markdown."""
+                # Split by ** and ` to find formatted sections
+                parts = re.split(r'(\*\*.*?\*\*|`.*?`)', text)
+                for part in parts:
+                    if part.startswith('**') and part.endswith('**'):
+                        # Bold text
+                        bold_text = part.replace('**', '')
+                        paragraph.add_run(bold_text).bold = True
+                    elif part.startswith('`') and part.endswith('`'):
+                        # Code/inline code
+                        code_text = part.replace('`', '')
+                        run = paragraph.add_run(code_text)
+                        run.font.name = 'Courier New'
+                    else:
+                        # Regular text
+                        if part:
+                            paragraph.add_run(part)
+            
+            # Parse markdown and add to document
+            lines = summary_text.split('\n')
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Check if it's a heading (starts and ends with **)
+                if re.match(r'^\*\*.*\*\*$', line):
+                    # Remove all ** and use as heading
+                    heading_text = re.sub(r'\*\*', '', line).strip()
+                    docx_doc.add_heading(heading_text, level=2)
+                elif line.startswith('•') or line.startswith('-') or (line.startswith('*') and not line.startswith('**')):
+                    # Bullet point - remove bullet and process inline formatting
+                    bullet_text = re.sub(r'^[•\-\*]\s*', '', line)
+                    p = docx_doc.add_paragraph(style='List Bullet')
+                    add_formatted_text(p, bullet_text)
+                else:
+                    # Regular paragraph - process inline formatting
+                    p = docx_doc.add_paragraph()
+                    add_formatted_text(p, line)
+            
+            # Save to BytesIO
+            docx_buffer = BytesIO()
+            docx_doc.save(docx_buffer)
+            file_content = docx_buffer.getvalue()
+            content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            
+        elif file_format == "txt":
+            file_content = summary_text.encode('utf-8')
+            content_type = "text/plain"
+        elif file_format == "md":
+            file_content = summary_text.encode('utf-8')
+            content_type = "text/markdown"
+        else:
+            # Default to docx
+            file_content = summary_text.encode('utf-8')
+            content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        
+        # Upload to Supabase Storage
+        supabase.storage.from_(storage_bucket).upload(
+            storage_path,
+            file_content,
+            file_options={"content-type": content_type, "upsert": "true"}
+        )
+        
+        # Return storage path
+        return f"storage://{storage_bucket}/{storage_path}"
+        
+    except Exception as e:
+        print(f"Warning: Failed to save summary file to storage: {e}")
+        return None
+
+def update_document_detailed_summary(filename: str, detailed_summary: str, team_id: Optional[str] = None) -> bool:
+    """Updates the detailed summary for a specific document in Supabase and saves summary file to storage."""
+    _check_supabase()
+    
+    if not team_id:
+        raise ValueError("team_id is required to update document detailed summary.")
+    
+    try:
+        team_uuid = _validate_team_id(team_id)
+        
+        # Find document by filename and team_id
+        result = supabase.table("documents").select("id").eq("filename", filename).eq("team_id", team_uuid).execute()
+        
+        if result.data and len(result.data) > 0:
+            doc_id = result.data[0]["id"]
+            
+            # Save summary file to storage as Word document
+            summary_file_path = save_summary_file_to_storage(filename, detailed_summary, team_id, "docx")
+            
+            # Prepare update data
+            update_data = {
+                "detailed_summary": detailed_summary
+            }
+            
+            # Add summary_file_path if file was saved successfully
+            if summary_file_path:
+                update_data["summary_file_path"] = summary_file_path
+            
+            # Update detailed_summary and summary_file_path columns
+            update_result = supabase.table("documents").update(update_data).eq("id", doc_id).execute()
+            
+            return update_result.data is not None and len(update_result.data) > 0
+        
+        return False
+        
+    except Exception as e:
+        # If column doesn't exist, this will fail - user needs to run migration
+        raise ValueError(f"Failed to update document detailed summary: {str(e)}. Please run the migration to add 'detailed_summary' and 'summary_file_path' columns to documents table.")
+
 def get_all_context(team_id: Optional[str] = None) -> str:
     """Combines all document content for the chatbot context from Supabase."""
     docs = get_documents(team_id)
@@ -250,13 +388,14 @@ def delete_document(filename: str, team_id: Optional[str] = None) -> bool:
         team_uuid = _validate_team_id(team_id)
         
         # Find and delete document
-        result = supabase.table("documents").select("id, file_path").eq("filename", filename).eq("team_id", team_uuid).execute()
+        result = supabase.table("documents").select("id, file_path, summary_file_path").eq("filename", filename).eq("team_id", team_uuid).execute()
         
         if result.data and len(result.data) > 0:
             doc_id = result.data[0]["id"]
             file_path = result.data[0].get("file_path")
+            summary_file_path = result.data[0].get("summary_file_path")
             
-            # Delete file from storage
+            # Delete original file from storage
             if file_path and file_path.startswith("storage://"):
                 # Delete from Supabase Storage
                 try:
@@ -264,7 +403,16 @@ def delete_document(filename: str, team_id: Optional[str] = None) -> bool:
                     storage_path = file_path.replace("storage://documents/", "")
                     supabase.storage.from_("documents").remove([storage_path])
                 except Exception as e:
-                    print(f"Warning: Could not delete file from storage: {e}")
+                    print(f"Warning: Could not delete original file from storage: {e}")
+            
+            # Delete summary file from storage
+            if summary_file_path and summary_file_path.startswith("storage://"):
+                try:
+                    # Extract bucket and path from storage://bucket/path format
+                    summary_storage_path = summary_file_path.replace("storage://documents/", "")
+                    supabase.storage.from_("documents").remove([summary_storage_path])
+                except Exception as e:
+                    print(f"Warning: Could not delete summary file from storage: {e}")
             
             # Delete from database
             delete_result = supabase.table("documents").delete().eq("id", doc_id).execute()
@@ -296,6 +444,8 @@ def _format_document(doc: Dict) -> Dict:
         "upload_date": doc.get("upload_date", datetime.now().isoformat()),
         "path": doc.get("file_path"),
         "summary": doc.get("summary"),
+        "detailed_summary": doc.get("detailed_summary"),  # Add detailed_summary field
+        "summary_file_path": doc.get("summary_file_path"),  # Add summary_file_path field
         "content": doc.get("content", ""),
         "team_id": doc.get("team_id")
     }
