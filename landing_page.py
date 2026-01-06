@@ -4,13 +4,30 @@ def show_landing_page():
     """Displays the landing page with hero section, features, and CTAs."""
     
     # Hero Section
+    # Add CSS for ClearKT colors
+    st.markdown("""
+    <style>
+    .clearkt-clear-part { 
+        color: #3b82f6 !important; 
+        display: inline;
+    }
+    .clearkt-kt-part { 
+        color: #000000 !important; 
+        display: inline;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     st.markdown("""
     <div style='text-align: center; padding: 4rem 2rem 3rem; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 20px; margin-bottom: 4rem;'>
-        <h1 style='font-size: 3.5rem; font-weight: 700; color: #1e293b; margin: 0 0 1rem 0; letter-spacing: -0.02em;'>
-            📚 Knowledge Transfer Hub
+        <h1 style='font-size: 3.5rem; font-weight: 700; margin: 0 0 1rem 0; letter-spacing: -0.02em; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;'>
+            <span class="clearkt-clear-part">Clear</span><span class="clearkt-kt-part">KT</span>
         </h1>
-        <p style='font-size: 1.5rem; color: #475569; margin: 0 0 2.5rem 0; font-weight: 400;'>
-            Centralized knowledge transfer for teams made simple
+        <h2 style='font-size: 2rem; font-weight: 600; color: #1e293b; margin: 0 0 1rem 0; letter-spacing: -0.01em;'>
+            Centralized project knowledge. Zero KT chaos.
+        </h2>
+        <p style='font-size: 1rem; color: #475569; margin: 0 0 2.5rem 0; font-weight: 350;'>
+            Upload documents, auto-summarize knowledge, and ask questions—all without relying on repeated manual knowledge transfer sessions.
         </p>
     </div>
     """, unsafe_allow_html=True)

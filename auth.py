@@ -18,8 +18,8 @@ def signup_page():
     
     st.markdown("""
     <div style='text-align: center; margin-bottom: 3rem;'>
-        <h1 style='font-size: 2.5rem; color: #1e293b; margin: 0 0 0.5rem 0; font-weight: 700;'>📝 Create Account</h1>
-        <p style='color: #64748b; font-size: 1.1rem; margin: 0;'>Join your team and start sharing knowledge</p>
+        <h1 style='font-size: 2.5rem; color: #1e293b; margin: 0 0 0.5rem 0; font-weight: 700;'>Create Account</h1>
+        <p style='color: #64748b; font-size: 1.1rem; margin: 0;'>Create or Join your team and start sharing knowledge</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -74,7 +74,7 @@ def team_choice_page():
     
     st.markdown("""
     <div style='text-align: center; margin-bottom: 3rem;'>
-        <h1 style='font-size: 2.5rem; color: #1e293b; margin: 0 0 0.5rem 0; font-weight: 700;'>👥 Choose Your Path</h1>
+        <h1 style='font-size: 2.5rem; color: #1e293b; margin: 0 0 0.5rem 0; font-weight: 700;'>Choose Your Path</h1>
         <p style='color: #64748b; font-size: 1.1rem; margin: 0;'>Create a new team or join an existing one</p>
     </div>
     """, unsafe_allow_html=True)
@@ -94,7 +94,7 @@ def team_choice_page():
     with col1:
         st.markdown("""
         <div style='border: 2px solid #e2e8f0; border-radius: 12px; padding: 2rem; text-align: center; height: 100%;'>
-            <h2 style='color: #1e293b; margin-bottom: 1rem;'>🏢 Create Team</h2>
+            <h2 style='color: #1e293b; margin-bottom: 1rem;'>Create Team</h2>
             <p style='color: #64748b; margin-bottom: 1.5rem;'>Start a new team and become the team lead. You'll create an access code to share with your team members.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -105,11 +105,11 @@ def team_choice_page():
     with col2:
         st.markdown("""
         <div style='border: 2px solid #e2e8f0; border-radius: 12px; padding: 2rem; text-align: center; height: 100%;'>
-            <h2 style='color: #1e293b; margin-bottom: 1rem;'>🔗 Join Team</h2>
-            <p style='color: #64748b; margin-bottom: 1.5rem;'>Join an existing team using the access code provided by your team lead.</p>
+            <h2 style='color: #1e293b; margin-bottom: 1rem;'>Join Team</h2>
+            <p style='color: #64748b; margin-bottom: 1.5rem;'>Join an existing team by entering the access code shared by your team lead to get access to your team’s centralized knowledge repository.</p>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("Join Team", key="join_team_btn", use_container_width=True, type="secondary"):
+        if st.button("Join Team", key="join_team_btn", use_container_width=True, type="primary"):
             st.session_state.current_page = "join_team"
             st.rerun()
 
@@ -141,7 +141,7 @@ def create_team_page():
         team_name = st.text_input("Team Name", placeholder="Enter your team name (e.g., Engineering Team)")
         access_code = st.text_input("Access Code", placeholder="Create a unique access code (e.g., ENG2024)", help="This code will be used by team members to join your team")
         
-        st.info("💡 **Tip**: Choose a memorable access code that's easy to share with your team members. They'll need this code to join your team.")
+        st.info("💡Choose a memorable access code that's easy to share with your team members. They'll need this code to join your team.")
         
         submit = st.form_submit_button("Create Team", type="primary")
         
@@ -150,8 +150,8 @@ def create_team_page():
                 st.error("Please enter a team name.")
             elif not access_code:
                 st.error("Please enter an access code.")
-            elif len(access_code) < 4:
-                st.error("Access code must be at least 4 characters long.")
+            elif len(access_code) < 5:
+                st.error("Access code must be at least 5 characters long.")
             else:
                 try:
                     # Create team with current user as team lead
@@ -230,7 +230,7 @@ def join_team_page():
                 # Validate access code
                 team = team_store.validate_access_code(access_code)
                 if not team:
-                    st.error("Invalid access code. Please contact your team administrator.")
+                    st.error("Invalid access code. Please contact your team lead.")
                 else:
                     # Authenticate user
                     user = user_store.authenticate_user(email, password)
@@ -304,7 +304,7 @@ def login_page():
                     # Validate access code
                     team = team_store.validate_access_code(access_code)
                     if not team:
-                        st.error("Invalid access code. Please contact your team administrator.")
+                        st.error("Invalid access code. Please contact your team lead.")
                     else:
                         # Authenticate user
                         user = user_store.authenticate_user(email, password)

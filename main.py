@@ -62,16 +62,90 @@ else:
     </div>
     """, unsafe_allow_html=True)
     
+    st.markdown("""
+        <style>
+        [data-testid="column"] {
+            display: flex;
+            align-items: center;
+        }
+        /* Override theme for ClearKT header - Force colors */
+        .clearkt-clear-span,
+        span.clearkt-clear-span,
+        .clearkt-header-clear,
+        span.clearkt-header-clear {
+            color: #3b82f6 !important;
+            display: inline !important;
+        }
+        .clearkt-kt-span,
+        span.clearkt-kt-span,
+        .clearkt-header-kt,
+        span.clearkt-header-kt {
+            color: #000000 !important;
+            display: inline !important;
+        }
+        /* Override any theme color rules for these spans */
+        h1 .clearkt-clear-span,
+        h1 span.clearkt-clear-span {
+            color: #3b82f6 !important;
+        }
+        h1 .clearkt-kt-span,
+        h1 span.clearkt-kt-span {
+            color: #000000 !important;
+        }
+        /* Force ClearKT header title size - must override all other rules */
+        .clearkt-main-header h1,
+        h1.clearkt-main-header,
+        .title_col h1,
+        div[data-testid="column"]:has(.clearkt-main-header) h1,
+        .stMarkdown:has(.clearkt-main-header) h1 {
+            font-size: 75px !important;
+            margin: 0 !important;
+            font-weight: 700 !important;
+            letter-spacing: -0.02em !important;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            line-height: 1 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
     # Logout button in the main area (top right)
     col_title, col_logout = st.columns([4, 1])
     with col_title:
-        st.title("📚 Centralized Knowledge Transfer Hub")
+        # Logo + title in a row with better alignment
+        logo_col, title_col = st.columns([1, 5])
+        
+        with logo_col:
+            st.image("assets/clearkt_logo.png", width=175)  # Larger, clearer logo
+
+        with title_col:
+            st.markdown(
+                """
+                <style>
+                .clearkt-clear-span {
+                    color: #3b82f6 !important;
+                    display: inline !important;
+                }
+                .clearkt-kt-span {
+                    color: #000000 !important;
+                    display: inline !important;
+                }
+                </style>
+                <div class="clearkt-main-header" style='display: flex; align-items: center; padding-top: 2rem;'>
+                    <h1 class="clearkt-main-header" style='margin:0 !important; font-size: 75px !important; font-weight: 700 !important; letter-spacing: -0.02em !important; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; line-height: 1 !important;'>
+                        <span class="clearkt-clear-span">Clear</span><span class="clearkt-kt-span">KT</span>
+                    </h1>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            
         if "team_name" in st.session_state:
             st.caption(f"Team: {st.session_state.team_name}")
     with col_logout:
-        st.markdown("<br>", unsafe_allow_html=True)  # Add some spacing
+        # Add padding to match logo alignment
+        st.markdown("<div style='padding-top: 4rem; display: flex; align-items: center; justify-content: flex-end;'>", unsafe_allow_html=True)
         if st.button("Logout", type="secondary", use_container_width=True):
             auth.logout()
+        st.markdown("</div>", unsafe_allow_html=True)
     
     # Check if user is team lead
     import team_store
@@ -91,8 +165,8 @@ else:
     with tab1:
         # Header section
         st.markdown("""
-        <div style='margin-bottom: 2.5rem; text-align: center;'>
-            <p style='color: #1e293b; margin: 0; font-size: 1.5rem; font-weight: 500; line-height: 1.5;'>Add documents to your team's knowledge base</p>
+        <div style='margin-bottom: 1rem; text-align: center;'>
+            <p style='color: #1e293b; margin: 1; font-size: 1.5rem; font-weight: 500; line-height: 1.5;'>Add documents to your team's knowledge base</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -115,65 +189,104 @@ else:
             # Process and Upload button - centered
             col1, col2, col3 = st.columns([1, 2.5, 1])
             with col2:
-                if st.button("Process & Upload", type="primary", use_container_width=True):
+                if st.button("Upload & Summarize", type="primary", use_container_width=True):
                     with st.spinner("Uploading and Summarizing..."):
+
                         # Save File
                         team_id = st.session_state.get("team_id")
                         user_email = st.session_state.get("email", "unknown")
                         team_name = st.session_state.get("team_name")
-                        metadata = document_store.save_uploaded_file(uploaded_file, user_email, team_id, team_name)
-                        
-                        # Success message
+
+                        metadata = document_store.save_uploaded_file(
+                            uploaded_file,
+                            user_email,
+                            team_id,
+                            team_name
+                        )
+
+                        # Success Message (Centered, Consistent Width)
                         st.markdown("""
-                        <div style='text-align: center; margin: 2rem 0;'>
-                            <div style='display: inline-flex; align-items: center; gap: 0.5rem; background: #f0fdf4; padding: 0.75rem 1.5rem; border-radius: 8px; border-left: 4px solid #22c55e;'>
-                                <span style='font-size: 1.2rem;'>✅</span>
-                                <p style='margin: 0; color: #166534; font-weight: 500;'>Document uploaded successfully</p>
+                        <div style="display:flex; justify-content:center; margin:2rem 0;">
+                            <div style="
+                                background:#f0fdf4;
+                                padding:0.75rem 1.5rem;
+                                border-radius:8px;
+                                border-left:4px solid #22c55e;
+                                max-width:750px;
+                                width:100%;
+                            ">
+                                <p style="margin:0; color:#166534; font-weight:500;">
+                                    Document uploaded successfully
+                                </p>
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
-                        
-                        # Generate Short Summary (for upload tab display)
-                        summary = gemini_utils.summarize_document_short(metadata["content"], uploaded_file.name)
-                        document_store.update_document_summary(uploaded_file.name, summary, team_id)
-                        
-                        st.markdown("<br><br>", unsafe_allow_html=True)
-                        
-                        # Display summary - centered
+
+                        # Generate Summary
+                        summary = gemini_utils.summarize_document_short(
+                            metadata["content"],
+                            uploaded_file.name
+                        )
+
+                        document_store.update_document_summary(
+                            uploaded_file.name,
+                            summary,
+                            team_id
+                        )
+
+                        # Summary Heading (Aligned with Content)
                         st.markdown("""
-                        <div style='text-align: center; margin: 2rem 0;'>
-                            <h3 style='color: #1e293b; margin-bottom: 1.5rem;'>📋 Document Summary</h3>
+                        <div style="display:flex; justify-content:center; margin:2rem 0 1rem 0;">
+                            <h3 style="
+                                color:#1e293b;
+                                max-width:750px;
+                                width:100%;
+                                text-align:left;
+                            ">
+                                📋 Document Summary
+                            </h3>
                         </div>
                         """, unsafe_allow_html=True)
-                        
+
                         if summary.strip():
                             # Format summary as bullet points
-                            formatted_summary = summary.strip()
-                            lines = formatted_summary.split('\n')
+                            lines = summary.strip().split("\n")
                             bullet_lines = []
-                            
+
                             for line in lines:
                                 line = line.strip()
                                 if line:
-                                    if line.startswith('-') or line.startswith('*') or line.startswith('·'):
-                                        line = '•' + line[1:].lstrip()
-                                    elif not line.startswith('•'):
+                                    if line.startswith(("-", "*", "·", "•")):
+                                        line = "• " + line.lstrip("-*·• ").strip()
+                                    else:
                                         line = f"• {line}"
                                     bullet_lines.append(line)
-                            
-                            # Limit to maximum 6 bullet points
+
+                            # Limit to max 6 bullets
                             bullet_lines = bullet_lines[:6]
-                            
-                            # Display as markdown in a centered card
+
+                            # Summary Card
                             st.markdown(f"""
-                            <div style='display: flex; justify-content: center;'>
-                                <div style='background: #ffffff; padding: 2rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: left; max-width: 750px; width: 100%;'>
+                            <div style="display:flex; justify-content:center; margin-bottom:2rem;">
+                                <div style="
+                                    background:#ffffff;
+                                    padding:2rem;
+                                    border-radius:12px;
+                                    box-shadow:0 1px 3px rgba(0,0,0,0.1);
+                                    max-width:750px;
+                                    width:100%;
+                                    text-align:left;
+                                    line-height:1.6;
+                                    color:#0f172a;
+                                ">
                                     {'<br>'.join(bullet_lines)}
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
+
                         else:
                             st.info("No summary available.")
+
 
     # Tab 2: Summaries
     with tab2:
@@ -244,16 +357,21 @@ else:
                                     processed_lines.append(line)
                             processed_summary = '\n'.join(processed_lines)
                             
-                            # Add custom CSS to make all headings in summary smaller
+                            # Add custom CSS to make all headings in summary smaller (but not the header)
                             st.markdown("""
                                 <style>
-                                /* Target headings in the summary section */
-                                .stMarkdown h1 { font-size: 1.3em !important; }
-                                .stMarkdown h2 { font-size: 1.2em !important; }
-                                .stMarkdown h3 { font-size: 1.15em !important; }
-                                .stMarkdown h4 { font-size: 1.1em !important; font-weight: 600 !important; }
-                                .stMarkdown h5 { font-size: 1.05em !important; }
-                                .stMarkdown h6 { font-size: 1em !important; }
+                                /* Target headings in the summary section only - exclude header */
+                                .stMarkdown:not(:has(.clearkt-main-header)) h1 { font-size: 1.3em !important; }
+                                .stMarkdown:not(:has(.clearkt-main-header)) h2 { font-size: 1.2em !important; }
+                                .stMarkdown:not(:has(.clearkt-main-header)) h3 { font-size: 1.15em !important; }
+                                .stMarkdown:not(:has(.clearkt-main-header)) h4 { font-size: 1.1em !important; font-weight: 600 !important; }
+                                .stMarkdown:not(:has(.clearkt-main-header)) h5 { font-size: 1.05em !important; }
+                                .stMarkdown:not(:has(.clearkt-main-header)) h6 { font-size: 1em !important; }
+                                /* Ensure header title stays large */
+                                .clearkt-main-header h1,
+                                h1.clearkt-main-header {
+                                    font-size: 96px !important;
+                                }
                                 </style>
                             """, unsafe_allow_html=True)
                             

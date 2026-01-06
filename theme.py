@@ -78,6 +78,16 @@ def apply_global_theme():
         color: #334155 !important;
     }
     
+    /* Exception for ClearKT header colors */
+    .clearkt-clear-span,
+    span.clearkt-clear-span {
+        color: #3b82f6 !important;
+    }
+    .clearkt-kt-span,
+    span.clearkt-kt-span {
+        color: #000000 !important;
+    }
+    
     /* ============================================
        BUTTONS - High Contrast, Accessible
        ============================================ */
