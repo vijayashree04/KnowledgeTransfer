@@ -36,6 +36,12 @@ is_authenticated = auth.check_auth()
 if not is_authenticated:
     if st.session_state.current_page == "signup":
         auth.signup_page()
+    elif st.session_state.current_page == "team_choice":
+        auth.team_choice_page()
+    elif st.session_state.current_page == "create_team":
+        auth.create_team_page()
+    elif st.session_state.current_page == "join_team":
+        auth.join_team_page()
     elif st.session_state.current_page == "login":
         auth.login_page()
     else:
@@ -64,7 +70,7 @@ else:
             st.caption(f"Team: {st.session_state.team_name}")
     with col_logout:
         st.markdown("<br>", unsafe_allow_html=True)  # Add some spacing
-        if st.button("🚪 Logout", type="secondary", use_container_width=True):
+        if st.button("Logout", type="secondary", use_container_width=True):
             auth.logout()
     
     # Check if user is team lead
