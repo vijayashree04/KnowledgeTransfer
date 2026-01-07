@@ -56,12 +56,12 @@ import theme
 
 # Page Config
 st.set_page_config(
-    page_title="Knowledge Transfer Hub",
-    page_icon="📚",
+    page_title="ClearKT",
+    page_icon="assets/clearkt_logo.png",
     layout="wide",
     initial_sidebar_state="auto"
 )
-
+st.title("ClearKT")
 # Apply global theme
 theme.apply_global_theme()
 
