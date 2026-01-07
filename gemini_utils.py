@@ -50,15 +50,82 @@ def get_gemini_model():
 
 def _is_code_file(text: str, filename: str = "") -> bool:
     """Detects if the content is code based on file extension or content patterns."""
-    code_extensions = ['.py', '.js', '.java', '.cpp', '.c', '.cs', '.go', '.rs', '.rb', '.php', '.swift', '.kt', '.ts', '.tsx', '.jsx']
-    if filename:
-        return any(filename.lower().endswith(ext) for ext in code_extensions)
+    # Comprehensive list of programming language extensions
+    code_extensions = [
+        # Popular languages
+        '.py', '.js', '.java', '.cpp', '.c', '.cs', '.go', '.rs', '.rb', '.php', 
+        '.swift', '.kt', '.ts', '.tsx', '.jsx',
+        # Web technologies
+        '.html', '.htm', '.css', '.scss', '.sass', '.less',
+        # Scripting languages
+        '.sh', '.bash', '.zsh', '.ps1', '.bat', '.cmd',
+        # Functional languages
+        '.hs', '.ml', '.fs', '.clj', '.scala', '.erl', '.ex',
+        # System languages
+        '.asm', '.s', '.asmx',
+        # Configuration and data
+        '.json', '.xml', '.yaml', '.yml', '.toml', '.ini', '.cfg',
+        # Database
+        '.sql', '.plsql', '.psql',
+        # Markup and documentation
+        '.md', '.markdown', '.rst',
+        # Build and config
+        '.makefile', '.cmake', '.gradle', '.maven',
+        # Other popular languages
+        '.r', '.m', '.matlab', '.lua', '.pl', '.pm', '.tcl', '.vim', '.vimrc',
+        '.dart', '.elm', '.vue', '.svelte', '.jsx', '.tsx',
+        # Jupyter notebooks
+        '.ipynb',
+        # Docker and containerization
+        '.dockerfile', '.dockerignore',
+        # CI/CD
+        '.github', '.gitlab-ci', '.jenkinsfile',
+        # Terraform and infrastructure
+        '.tf', '.tfvars',
+        # Shell scripts with shebang
+        '.zshrc', '.bashrc', '.profile'
+    ]
     
-    # Check for code patterns
-    code_patterns = ['def ', 'function ', 'class ', 'import ', 'from ', 'public class', 'function(', 'const ', 'let ', 'var ']
-    lines = text.split('\n')[:50]  # Check first 50 lines
+    if filename:
+        filename_lower = filename.lower()
+        # Check exact extension match
+        if any(filename_lower.endswith(ext) for ext in code_extensions):
+            return True
+        # Check for files without extension but with code-like names
+        if any(filename_lower == ext.replace('.', '') for ext in code_extensions if ext.startswith('.')):
+            return True
+    
+    # Check for code patterns - expanded list
+    code_patterns = [
+        # Python
+        'def ', 'class ', 'import ', 'from ', 'if __name__', 'print(', 'return ',
+        # JavaScript/TypeScript
+        'function ', 'const ', 'let ', 'var ', '=>', 'export ', 'import {', 'require(',
+        # Java/C#
+        'public class', 'private ', 'public ', 'static void', 'namespace ', 'using ',
+        # C/C++
+        '#include', 'int main', 'void main', 'printf', 'cout <<',
+        # Go
+        'package ', 'func ', 'import (',
+        # Rust
+        'fn ', 'use ', 'mod ', 'pub fn',
+        # Ruby
+        'def ', 'class ', 'require ', 'module ',
+        # PHP
+        '<?php', 'function ', 'class ',
+        # Shell scripts
+        '#!/bin/', '#!/usr/bin/', 'echo ', 'export ',
+        # SQL
+        'SELECT ', 'INSERT ', 'UPDATE ', 'CREATE TABLE', 'ALTER TABLE',
+        # HTML/CSS
+        '<html', '<div', '<script', 'body {', '@media',
+        # General patterns
+        '//', '/*', '*/', '# ', '->', '::', '=>'
+    ]
+    
+    lines = text.split('\n')[:100]  # Check first 100 lines for better detection
     code_line_count = sum(1 for line in lines if any(pattern in line for pattern in code_patterns))
-    return code_line_count > 5  # If more than 5 lines have code patterns, likely code
+    return code_line_count > 3  # Lowered threshold to catch more code files
 
 def _generate_with_fallback_models(client, prompt, primary_model="gemini-2.5-flash"):
     """Generates content with automatic fallback to alternative models if quota is exceeded."""

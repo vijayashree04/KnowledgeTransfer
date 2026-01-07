@@ -1,9 +1,49 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
+from datetime import datetime, timezone, timedelta
 
 # Load environment variables first
 load_dotenv()
+
+def format_date_ist(date_string):
+    """Format ISO date string to DD-MM-YYYY HH:MM AM/PM in IST."""
+    if not date_string or date_string == 'N/A':
+        return 'N/A'
+    try:
+        # Parse the ISO format date
+        if isinstance(date_string, str):
+            # Handle different ISO formats
+            if '+' in date_string or date_string.endswith('Z'):
+                # Remove timezone info and parse
+                date_str_clean = date_string.replace('+00:00', '').replace('Z', '')
+                if '.' in date_str_clean:
+                    # Has microseconds
+                    dt = datetime.fromisoformat(date_str_clean)
+                else:
+                    dt = datetime.fromisoformat(date_str_clean)
+                # Assume UTC if no timezone info
+                dt = dt.replace(tzinfo=timezone.utc)
+            else:
+                dt = datetime.fromisoformat(date_string)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            dt = date_string
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+        
+        # Convert to IST (UTC+5:30)
+        ist_offset = timedelta(hours=5, minutes=30)
+        ist_tz = timezone(ist_offset)
+        dt_ist = dt.astimezone(ist_tz)
+        
+        # Format as DD-MM-YYYY HH:MM AM/PM
+        formatted = dt_ist.strftime('%d-%m-%Y %I:%M %p')
+        return formatted
+    except Exception as e:
+        # If parsing fails, return original string
+        return str(date_string)
 
 # Now import modules that depend on environment variables
 import auth
@@ -48,20 +88,6 @@ if not is_authenticated:
         landing_page.show_landing_page()
 else:
     
-    # Welcome message banner at the top
-    user_name = st.session_state.get("name", st.session_state.get("email", "User"))
-    team_name = st.session_state.get("team_name", "your team")
-    st.markdown(f"""
-    <div style='background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid #3b82f6;'>
-        <h2 style='color: #1e293b; margin: 0 0 0.5rem 0; font-size: 1.75rem; font-weight: 600;'>
-            👋 Welcome back, {user_name}!
-        </h2>
-        <p style='color: #475569; margin: 0; font-size: 1.1rem;'>
-            Ready to explore your team's knowledge base? Upload documents, view summaries, or chat with the AI assistant.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
     st.markdown("""
         <style>
         [data-testid="column"] {
@@ -100,7 +126,7 @@ else:
         .stMarkdown:has(.clearkt-main-header) h1 {
             font-size: 75px !important;
             margin: 0 !important;
-            font-weight: 700 !important;
+            font-weight: 1000 !important;
             letter-spacing: -0.02em !important;
             font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
             line-height: 1 !important;
@@ -130,7 +156,7 @@ else:
                 }
                 </style>
                 <div class="clearkt-main-header" style='display: flex; align-items: center; padding-top: 2rem;'>
-                    <h1 class="clearkt-main-header" style='margin:0 !important; font-size: 75px !important; font-weight: 700 !important; letter-spacing: -0.02em !important; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; line-height: 1 !important;'>
+                    <h1 class="clearkt-main-header" style='margin:0 !important; font-size: 75px !important; font-weight: 1000 !important; letter-spacing: -0.02em !important; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; line-height: 1 !important;'>
                         <span class="clearkt-clear-span">Clear</span><span class="clearkt-kt-span">KT</span>
                     </h1>
                 </div>
@@ -141,11 +167,33 @@ else:
         if "team_name" in st.session_state:
             st.caption(f"Team: {st.session_state.team_name}")
     with col_logout:
-        # Add padding to match logo alignment
-        st.markdown("<div style='padding-top: 4rem; display: flex; align-items: center; justify-content: flex-end;'>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)  # Add some spacing
         if st.button("Logout", type="secondary", use_container_width=True):
             auth.logout()
-        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Welcome message banner (below logo, above tabs) - auto-hide after 3 minutes
+    import time
+    user_name = st.session_state.get("name", st.session_state.get("email", "User"))
+    
+    # Initialize login time if not set
+    if "login_time" not in st.session_state:
+        st.session_state.login_time = time.time()
+    
+    # Check if 3 minutes (180 seconds) have passed
+    elapsed_time = time.time() - st.session_state.login_time
+    show_welcome = elapsed_time < 180  # 3 minutes
+    
+    if show_welcome:
+        st.markdown(f"""
+        <div style='background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid #3b82f6;'>
+            <h2 style='color: #1e293b; margin: 0 0 0.5rem 0; font-size: 1.75rem; font-weight: 600;'>
+                👋 Welcome back, {user_name}!
+            </h2>
+            <p style='color: #475569; margin: 0; font-size: 1.1rem;'>
+                Ready to explore your team's knowledge base? Upload documents, view summaries, or chat with the AI assistant.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Check if user is team lead
     import team_store
@@ -302,7 +350,8 @@ else:
                 col1, col2 = st.columns([4, 1])
                 
                 with col1:
-                    with st.expander(f"📄 {doc['filename']} (Uploaded by {doc['uploaded_by']} on {doc['upload_date']})"):
+                    upload_date_formatted = format_date_ist(doc.get('upload_date', ''))
+                    with st.expander(f"📄 {doc['filename']} (Uploaded by {doc['uploaded_by']} on {upload_date_formatted})"):
                         st.markdown("### Detailed Summary")
                         
                         # Check if detailed summary exists in Supabase
@@ -371,6 +420,26 @@ else:
                                 .clearkt-main-header h1,
                                 h1.clearkt-main-header {
                                     font-size: 96px !important;
+                                }
+                                /* Override code block styling - blue background with white text */
+                                .stMarkdown code,
+                                .stMarkdown pre,
+                                .stMarkdown pre code {
+                                    background-color: #3b82f6 !important;
+                                    color: #ffffff !important;
+                                    border-radius: 4px !important;
+                                    padding: 0.2em 0.4em !important;
+                                }
+                                .stMarkdown pre {
+                                    background-color: #3b82f6 !important;
+                                    color: #ffffff !important;
+                                    border: 1px solid #2563eb !important;
+                                    padding: 1rem !important;
+                                }
+                                .stMarkdown pre code {
+                                    background-color: transparent !important;
+                                    color: #ffffff !important;
+                                    padding: 0 !important;
                                 }
                                 </style>
                             """, unsafe_allow_html=True)
@@ -493,7 +562,7 @@ else:
                 st.markdown("""
                 <div style='display: flex; justify-content: center; align-items: center; min-height: 400px; text-align: center;'>
                     <div>
-                        <h2 style='color: #64748b; font-weight: 400; margin-bottom: 1rem;'>👋 Welcome to your Knowledge Base</h2>
+                        <p style='color: #64748b; font-weight: 400; font-size: 2.5rem; margin-bottom: 1.5rem;'>Welcome to your Knowledge Base</p>
                         <p style='color: #94a3b8; font-size: 1.1rem;'>Ask any questions about your project documents, and I'll help you find the answers.</p>
                     </div>
                 </div>
@@ -540,7 +609,7 @@ else:
     if is_lead:
         with tab4:
             st.header("⚙️ Team Settings")
-            st.info("👑 As the Team Lead, you can manage team settings here.")
+            st.info("As the Team Lead, you can manage team settings here.")
             
             # Get current team info
             team = team_store.get_team_by_id(team_id) if team_id else None
@@ -554,7 +623,8 @@ else:
                 with col2:
                     current_lead = team.get('team_lead_email', 'Not assigned')
                     st.write(f"**Current Team Lead:** {current_lead}")
-                    st.write(f"**Team Created:** {team.get('created_at', 'N/A')}")
+                    team_created_formatted = format_date_ist(team.get('created_at', 'N/A'))
+                    st.write(f"**Team Created:** {team_created_formatted}")
                 
                 st.markdown("---")
                 st.markdown("### Update Team Lead")
