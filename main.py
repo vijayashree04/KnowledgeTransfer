@@ -61,7 +61,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="auto"
 )
-st.title("ClearKT")
 # Apply global theme
 theme.apply_global_theme()
 
