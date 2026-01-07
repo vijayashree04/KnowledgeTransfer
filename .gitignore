@@ -136,4 +136,3 @@ drizzle/
 # package-lock.json
 .env
 .env
-nano .gitignore
